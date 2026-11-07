@@ -11,8 +11,10 @@ import java.util.Optional;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 
+    // Get active categories ordered by display order.
     List<Category> findByActiveTrueOrderByDisplayOrderAsc();
 
+    // Get all categories, including inactive ones.
     List<Category> findAllByOrderByDisplayOrderAsc();
 
     // Find a category by ID only if it is active.

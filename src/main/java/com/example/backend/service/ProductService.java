@@ -1,15 +1,14 @@
-
 package com.example.backend.service;
 
+import com.example.backend.dto.ProductRequest;
 import com.example.backend.entity.Category;
 import com.example.backend.entity.Product;
+import com.example.backend.exception.ApiException;
 import com.example.backend.repository.CategoryRepository;
 import com.example.backend.repository.ProductRepository;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,161 +21,91 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
 
-    public ProductService(
-            ProductRepository productRepository,
-            CategoryRepository categoryRepository) {
-
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
     }
 
-    // Get available products for public browsing.
     @Transactional(readOnly = true)
     public List<Product> getAvailableProducts() {
         return productRepository.findByAvailableTrueOrderByCreatedAtDesc();
     }
 
-    // Get all products for the admin panel.
     @Transactional(readOnly = true)
     public List<Product> getAllProducts() {
         return productRepository.findAllByOrderByCreatedAtDesc();
     }
 
-    // Get a product by ID.
     @Transactional(readOnly = true)
     public Product getProductById(Long id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Product not found"
-                ));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Product not found"));
     }
 
-    // Get available featured products.
     @Transactional(readOnly = true)
     public List<Product> getFeaturedProducts() {
         return productRepository.findByAvailableTrueAndFeaturedTrue();
     }
 
-    // Get available products in a category.
     @Transactional(readOnly = true)
     public List<Product> getProductsByCategory(Long categoryId) {
-
         if (!categoryRepository.existsById(categoryId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Category not found"
-            );
+            throw new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Category not found");
         }
-
         return productRepository.findByCategoryIdAndAvailableTrue(categoryId);
     }
 
-    // Create a product.
-    public Product createProduct(Product product) {
-        validateProduct(product);
-
-        Category category = getCategory(product.getCategory().getId());
-
-        product.setId(null);
-        product.setCategory(category);
-
+    public Product createProduct(ProductRequest request) {
+        Product product = new Product();
+        apply(product, request);
         return productRepository.save(product);
     }
 
-    // Update an existing product.
-    public Product updateProduct(Long id, Product updatedProduct) {
-        validateProduct(updatedProduct);
-
-        Product existingProduct = getProductById(id);
-
-        Category category = getCategory(updatedProduct.getCategory().getId());
-
-        existingProduct.setName(updatedProduct.getName());
-        existingProduct.setDescription(updatedProduct.getDescription());
-        existingProduct.setCategory(category);
-        existingProduct.setPrice(updatedProduct.getPrice());
-        existingProduct.setImage(updatedProduct.getImage());
-        existingProduct.setAvailable(updatedProduct.getAvailable());
-        existingProduct.setStock(updatedProduct.getStock());
-        existingProduct.setFeatured(updatedProduct.getFeatured());
-
-        return productRepository.save(existingProduct);
-    }
-
-    // Delete a product.
-    public void deleteProduct(Long id) {
+    public Product updateProduct(Long id, ProductRequest request) {
         Product product = getProductById(id);
-        productRepository.delete(product);
+        apply(product, request);
+        return productRepository.save(product);
     }
 
-    // Find the category belonging to the product.
-    private Category getCategory(Long categoryId) {
-
-        if (categoryId == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Product category is required"
-            );
-        }
-
-        return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Category not found"
-                ));
+    public void deleteProduct(Long id) {
+        productRepository.delete(getProductById(id));
     }
 
-    // Validate product information.
-    private void validateProduct(Product product) {
-
-        if (product == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Product information is required"
-            );
+    private void apply(Product product, ProductRequest request) {
+        if (!hasAllLanguages(request.name())) {
+            throw bad("Product name must contain en, fa, and ps translations");
+        }
+        if (!hasAllLanguages(request.description())) {
+            throw bad("Product description must contain en, fa, and ps translations");
+        }
+        if (request.price() == null || request.price().compareTo(BigDecimal.ZERO) < 0) {
+            throw bad("Product price cannot be negative");
+        }
+        if (request.stock() == null || request.stock() < 0) {
+            throw bad("Product stock cannot be negative");
+        }
+        if (request.categoryId() == null) {
+            throw bad("Product category is required");
         }
 
-        if (!hasAllLanguages(product.getName())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Product name must contain en, fa, and ps translations"
-            );
-        }
+        Category category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Category not found"));
 
-        if (!hasAllLanguages(product.getDescription())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Product description must contain en, fa, and ps translations"
-            );
-        }
+        product.setName(request.name());
+        product.setDescription(request.description());
+        product.setCategory(category);
+        product.setPrice(request.price());
+        product.setImage(request.image());
+        product.setAvailable(request.available() == null || request.available());
+        product.setStock(request.stock());
+        product.setFeatured(Boolean.TRUE.equals(request.featured()));
+    }
 
-        if (product.getPrice() == null
-                || product.getPrice().compareTo(BigDecimal.ZERO) < 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Product price cannot be negative"
-            );
-        }
-
-        if (product.getStock() == null || product.getStock() < 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Product stock cannot be negative"
-            );
-        }
-
-        if (product.getCategory() == null
-                || product.getCategory().getId() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Product category is required"
-            );
-        }
+    private static ApiException bad(String message) {
+        return new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message);
     }
 
     private boolean hasAllLanguages(Map<String, String> translations) {
-
         return translations != null
                 && hasText(translations.get("en"))
                 && hasText(translations.get("fa"))

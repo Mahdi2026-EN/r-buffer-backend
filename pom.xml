@@ -70,10 +70,17 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- PostgreSQL -->
+		<!-- PostgreSQL (for production) -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- H2 (embedded local database for development) -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
 		</dependency>
 

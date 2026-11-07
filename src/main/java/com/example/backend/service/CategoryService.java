@@ -4,7 +4,6 @@ package com.example.backend.service;
 import com.example.backend.dto.CategoryRequest;
 import com.example.backend.entity.Category;
 import com.example.backend.repository.CategoryRepository;
-import com.example.backend.repository.ProductRepository;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,14 +18,9 @@ import java.util.Map;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final ProductRepository productRepository;
 
-    public CategoryService(
-            CategoryRepository categoryRepository,
-            ProductRepository productRepository) {
-
+    public CategoryService(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
-        this.productRepository = productRepository;
     }
 
     // Get all active categories for public browsing.
@@ -41,7 +35,7 @@ public class CategoryService {
         return categoryRepository.findAllByOrderByDisplayOrderAsc();
     }
 
-    // Get a category by ID (including inactive categories).
+    // Get a category by ID, including inactive categories.
     @Transactional(readOnly = true)
     public Category getCategoryById(Long id) {
         return categoryRepository.findById(id)
@@ -51,7 +45,7 @@ public class CategoryService {
                 ));
     }
 
-    // Get a category by ID only if it is active.
+    // Get a category only if it is active.
     @Transactional(readOnly = true)
     public Category getActiveCategoryById(Long id) {
         return categoryRepository.findByIdAndActiveTrue(id)
@@ -61,7 +55,7 @@ public class CategoryService {
                 ));
     }
 
-    // Create a category.
+    // Create a new category.
     public Category createCategory(CategoryRequest request) {
         validateCategory(request);
 
@@ -105,20 +99,13 @@ public class CategoryService {
         return categoryRepository.save(existingCategory);
     }
 
-    // Delete a category only if it has no products.
+    // Safely deactivate a category instead of permanently deleting it.
     public void deleteCategory(Long id) {
-
         Category category = getCategoryById(id);
 
-        if (productRepository.existsByCategoryId(id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "This category cannot be deleted because it contains products. "
-                            + "Move or remove its products first."
-            );
-        }
+        category.setActive(false);
 
-        categoryRepository.delete(category);
+        categoryRepository.save(category);
     }
 
     // Validate incoming category information.

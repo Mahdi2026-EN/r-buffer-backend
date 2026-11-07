@@ -18,11 +18,11 @@ public class Product {
     private Long id;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
+    @Column(nullable = false)
     private Map<String, String> name;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
+    @Column(nullable = false)
     private Map<String, String> description;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

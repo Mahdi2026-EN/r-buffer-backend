@@ -1,12 +1,8 @@
-
 package com.example.backend.controller;
 
+import com.example.backend.dto.ProductRequest;
 import com.example.backend.dto.ProductResponse;
-import com.example.backend.entity.Product;
 import com.example.backend.service.ProductService;
-
-import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,98 +19,50 @@ public class ProductController {
         this.productService = productService;
     }
 
-    // Get available products
+    // Public: available products
     @GetMapping
-    public ResponseEntity<List<ProductResponse>> getAvailableProducts() {
-
-        List<ProductResponse> products = productService
-                .getAvailableProducts()
-                .stream()
-                .map(ProductResponse::from)
-                .toList();
-
-        return ResponseEntity.ok(products);
+    public List<ProductResponse> getAvailableProducts() {
+        return productService.getAvailableProducts().stream().map(ProductResponse::from).toList();
     }
 
-    // Admin: Get all products
-    @GetMapping("/admin")
-    public ResponseEntity<List<ProductResponse>> getAllProducts() {
-
-        List<ProductResponse> products = productService
-                .getAllProducts()
-                .stream()
-                .map(ProductResponse::from)
-                .toList();
-
-        return ResponseEntity.ok(products);
-    }
-
-    // Get product by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(
-            @PathVariable Long id) {
-
-        Product product = productService.getProductById(id);
-
-        return ResponseEntity.ok(ProductResponse.from(product));
-    }
-
-    // Get featured products
+    // Public: featured products
     @GetMapping("/featured")
-    public ResponseEntity<List<ProductResponse>> getFeaturedProducts() {
-
-        List<ProductResponse> products = productService
-                .getFeaturedProducts()
-                .stream()
-                .map(ProductResponse::from)
-                .toList();
-
-        return ResponseEntity.ok(products);
+    public List<ProductResponse> getFeaturedProducts() {
+        return productService.getFeaturedProducts().stream().map(ProductResponse::from).toList();
     }
 
-    // Get products by category
+    // Public: available products in one category
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<ProductResponse>> getProductsByCategory(
-            @PathVariable Long categoryId) {
-
-        List<ProductResponse> products = productService
-                .getProductsByCategory(categoryId)
-                .stream()
-                .map(ProductResponse::from)
-                .toList();
-
-        return ResponseEntity.ok(products);
+    public List<ProductResponse> getProductsByCategory(@PathVariable Long categoryId) {
+        return productService.getProductsByCategory(categoryId).stream().map(ProductResponse::from).toList();
     }
 
-    // Admin: Create product
+    // Admin: every product, including unavailable ones
+    @GetMapping("/admin")
+    public List<ProductResponse> getAllProducts() {
+        return productService.getAllProducts().stream().map(ProductResponse::from).toList();
+    }
+
+    // Public: one product
+    @GetMapping("/{id}")
+    public ProductResponse getProductById(@PathVariable Long id) {
+        return ProductResponse.from(productService.getProductById(id));
+    }
+
     @PostMapping
-    public ResponseEntity<ProductResponse> createProduct(
-            @Valid @RequestBody Product product) {
-
-        Product created = productService.createProduct(product);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ProductResponse.from(created));
+    public ResponseEntity<ProductResponse> createProduct(@RequestBody ProductRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ProductResponse.from(productService.createProduct(request)));
     }
 
-    // Admin: Update product
     @PutMapping("/{id}")
-    public ResponseEntity<ProductResponse> updateProduct(
-            @PathVariable Long id,
-            @Valid @RequestBody Product product) {
-
-        Product updated = productService.updateProduct(id, product);
-
-        return ResponseEntity.ok(ProductResponse.from(updated));
+    public ProductResponse updateProduct(@PathVariable Long id, @RequestBody ProductRequest request) {
+        return ProductResponse.from(productService.updateProduct(id, request));
     }
 
-    // Admin: Delete product
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-
         productService.deleteProduct(id);
-
         return ResponseEntity.noContent().build();
     }
 }

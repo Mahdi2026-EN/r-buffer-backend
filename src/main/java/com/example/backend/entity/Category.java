@@ -16,13 +16,13 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Stores English, Dari, and Pashto translations as JSONB.
+    // Stores English, Dari, and Pashto translations as JSON data.
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "jsonb")
+    @Column(nullable = false)
     private Map<String, String> name;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
+    @Column
     private Map<String, String> description;
 
     @Column(length = 100)
@@ -37,14 +37,16 @@ public class Category {
     @Column(nullable = false)
     private Boolean active = true;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public Category() {
     }
 
+    // ID
     public Long getId() {
         return id;
     }
@@ -53,6 +55,7 @@ public class Category {
         this.id = id;
     }
 
+    // Multilingual name
     public Map<String, String> getName() {
         return name;
     }
@@ -61,6 +64,7 @@ public class Category {
         this.name = name;
     }
 
+    // Multilingual description
     public Map<String, String> getDescription() {
         return description;
     }
@@ -69,6 +73,7 @@ public class Category {
         this.description = description;
     }
 
+    // Icon
     public String getIcon() {
         return icon;
     }
@@ -77,6 +82,7 @@ public class Category {
         this.icon = icon;
     }
 
+    // Image
     public String getImage() {
         return image;
     }
@@ -85,6 +91,7 @@ public class Category {
         this.image = image;
     }
 
+    // Display order
     public Integer getDisplayOrder() {
         return displayOrder;
     }
@@ -93,6 +100,7 @@ public class Category {
         this.displayOrder = displayOrder;
     }
 
+    // Active status
     public Boolean getActive() {
         return active;
     }
@@ -101,6 +109,7 @@ public class Category {
         this.active = active;
     }
 
+    // Created timestamp
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -109,6 +118,7 @@ public class Category {
         this.createdAt = createdAt;
     }
 
+    // Updated timestamp
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
@@ -117,6 +127,7 @@ public class Category {
         this.updatedAt = updatedAt;
     }
 
+    // Automatically runs when a category is first saved.
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -131,6 +142,7 @@ public class Category {
         }
     }
 
+    // Automatically runs when a category is updated.
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();

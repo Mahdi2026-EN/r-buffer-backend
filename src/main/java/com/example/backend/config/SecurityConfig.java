@@ -125,14 +125,18 @@ public class SecurityConfig {
                                 "/api/products/admin"
                         ).hasRole("ADMIN")
 
-                        // Public category and product browsing
+                        // Public catalogue, site text, announcements and settings
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/categories",
                                 "/api/categories/{id}",
                                 "/api/products",
                                 "/api/products/featured",
-                                "/api/products/category/**"
+                                "/api/products/category/**",
+                                "/api/products/{id}",
+                                "/api/announcements",
+                                "/api/content",
+                                "/api/settings"
                         ).permitAll()
 
                         // Admin-only category and product creation
